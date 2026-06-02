@@ -882,16 +882,17 @@
       <div class="pane-left-header">输入</div>
       <div class="pane-left-body">
         <textarea class="prompt-area" id="prompt-input"
-          placeholder="输入你想优化的 Prompt…&#10;&#10;高频表达能让 LLM 给出更准确、更高质量的回答"
+          placeholder="输入你想优化的 Prompt…&#10;&#10;英文示例：Explain quantum computing to a 5-year-old&#10;中文示例：请用通俗易懂的语言解释什么是量子计算"
           autocomplete="off" spellcheck="false"></textarea>
         <div class="textarea-footer">
           <span id="char-count">0 字符</span>
           <span style="font-size:11px;color:var(--text-soft);">⌘↵ 优化</span>
         </div>
         <div class="examples-row">
+          <button class="example-chip">请用通俗易懂的语言解释什么是量子计算</button>
           <button class="example-chip">Explain quantum computing to a 5-year-old</button>
           <button class="example-chip">Write a polite email declining a meeting</button>
-          <button class="example-chip">Debug this Python function step by step</button>
+          <button class="example-chip">请分析人工智能对未来教育行业的影响</button>
         </div>
         <div class="action-row">
           <button class="btn" id="optimize-btn">优化提示词</button>
@@ -920,6 +921,7 @@
         <div class="empty-desc">
           基于 Textual Frequency Law，系统会调用 LLM 生成多个高频改写版本，
           再用 Zipf 频率引擎打分排序。分数越高，LLM 理解和回答质量越好。
+          支持中文（jieba 分词）和英文。
         </div>
         <div class="empty-features">
           <span class="empty-feature">

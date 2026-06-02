@@ -46,6 +46,25 @@ The score is reported on the standard **Zipf scale** (0–8), where:
 - **4–5**: Common everyday language
 - **6–8**: High-frequency, broadly understood expressions
 
+### Chinese Language Support (中文支持)
+
+FreqPrompt supports Chinese prompts with a dedicated pipeline:
+
+| Component | English | Chinese |
+|---|---|---|
+| **Detection** | CJK ratio ≤ 30% | CJK ratio > 30% |
+| **Tokenizer** | Whitespace + ASCII punctuation | Forward Maximum Matching (FMM) with our 1,792-word frequency dictionary |
+| **Frequency DB** | 15,000 English word-Zipf pairs | 1,792 Chinese word-Zipf pairs (BCC/SUBTLEX-CH norms) |
+| **Default unknown** | 1.0 | 0.8 (steeper Zipf slope for Chinese: s ≈ 1.3 vs s ≈ 1.0) |
+| **LLM prompt** | English paraphrase system prompt | Chinese paraphrase system prompt (现代标准汉语) |
+
+**Segmentation approach:** We use a pure-Rust Forward Maximum Matching (FMM) algorithm. Unlike jieba/THULAC which require C compilation (blocking WASM targets), FMM is dependency-free. The frequency dictionary serves double duty — as both the word list for segmentation and the lookup table for scoring. For unknown multi-character words, we fall back to the geometric mean of individual character frequencies.
+
+**Zipf parameters:** Chinese word frequency distributions are more skewed than English. The Zipf exponent s is approximately 1.3 for Chinese (vs 1.0 for English), meaning high-frequency words are even more dominant. We account for this by:
+- Using a lower default score for unknown words (0.8 vs 1.0)
+- Calibrating frequency values from Chinese-specific corpora (BCC, SUBTLEX-CH)
+- Character-level fallback for compound words not in the dictionary
+
 ### Optimization Pipeline
 
 ```

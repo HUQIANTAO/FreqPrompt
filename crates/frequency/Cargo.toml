@@ -4,3 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+# No external dependencies — pure Rust for WASM compatibility.
+# Chinese tokenization uses Forward Maximum Matching (FMM)
+# with our embedded frequency dictionary as the word list.

@@ -15,13 +15,12 @@ struct OptimizeResult {
     candidates: Vec<FrequencyResult>,
 }
 
-/// Score a list of sentences and return the results sorted by frequency (highest first).
+/// Score a list of sentences (auto-detects language).
 /// Input: JSON array of strings, e.g. ["sentence1", "sentence2", ...]
 /// Output: JSON array of {text, zipf_score} sorted by zipf_score descending.
 #[wasm_bindgen]
 pub fn score_sentences(json_input: &str) -> String {
-    let sentences: Vec<String> =
-        serde_json::from_str(json_input).unwrap_or_else(|_| vec![]);
+    let sentences: Vec<String> = serde_json::from_str(json_input).unwrap_or_default();
     let scored = frequency::score_sentences(&sentences);
     let results: Vec<FrequencyResult> = scored
         .into_iter()
@@ -30,8 +29,11 @@ pub fn score_sentences(json_input: &str) -> String {
     serde_json::to_string(&results).unwrap_or_else(|_| "[]".to_string())
 }
 
-/// Optimize: given an original sentence and a list of paraphrase candidates,
-/// compute frequency scores for all (including the original), and return the best.
+/// Optimize: given an original sentence and paraphrase candidates,
+/// compute frequency scores and return the best.
+///
+/// Language is auto-detected from the original text.
+/// Works with both English (whitespace tokenizer) and Chinese (jieba segmentation).
 ///
 /// Input JSON: {"original": "...", "candidates": ["...", "..."]}
 /// Output JSON: {"original": {text, zipf_score}, "optimized": {text, zipf_score}, "candidates": [...]}
@@ -43,22 +45,23 @@ pub fn optimize_prompt(json_input: &str) -> String {
         candidates: Vec<String>,
     }
 
-    let input: OptimizeInput =
-        serde_json::from_str(json_input).unwrap_or_else(|_| OptimizeInput {
-            original: String::new(),
-            candidates: vec![],
-        });
+    let input: OptimizeInput = serde_json::from_str(json_input).unwrap_or_else(|_| OptimizeInput {
+        original: String::new(),
+        candidates: vec![],
+    });
+
+    let lang = frequency::detect_language(&input.original);
 
     // Score original
-    let original_score = frequency::sentence_zipf(&input.original);
+    let original_score = frequency::sentence_zipf_lang(&input.original, lang);
 
-    // Score candidates
+    // Score all candidates
     let mut all: Vec<FrequencyResult> = input
         .candidates
         .iter()
         .map(|c| FrequencyResult {
             text: c.clone(),
-            zipf_score: frequency::sentence_zipf(c),
+            zipf_score: frequency::sentence_zipf_lang(c, lang),
         })
         .collect();
 
@@ -69,15 +72,22 @@ pub fn optimize_prompt(json_input: &str) -> String {
     });
 
     // Sort by score descending
-    all.sort_by(|a, b| b.zipf_score.partial_cmp(&a.zipf_score).unwrap_or(std::cmp::Ordering::Equal));
-
-    let optimized = all.first().map(|r| FrequencyResult {
-        text: r.text.clone(),
-        zipf_score: r.zipf_score,
-    }).unwrap_or(FrequencyResult {
-        text: String::new(),
-        zipf_score: 0.0,
+    all.sort_by(|a, b| {
+        b.zipf_score
+            .partial_cmp(&a.zipf_score)
+            .unwrap_or(std::cmp::Ordering::Equal)
     });
+
+    let optimized = all
+        .first()
+        .map(|r| FrequencyResult {
+            text: r.text.clone(),
+            zipf_score: r.zipf_score,
+        })
+        .unwrap_or(FrequencyResult {
+            text: String::new(),
+            zipf_score: 0.0,
+        });
 
     let result = OptimizeResult {
         original: FrequencyResult {
@@ -89,4 +99,10 @@ pub fn optimize_prompt(json_input: &str) -> String {
     };
 
     serde_json::to_string(&result).unwrap_or_else(|_| "{}".to_string())
+}
+
+/// Detect the language of a text. Returns "zh" or "en".
+#[wasm_bindgen]
+pub fn detect_language(text: &str) -> String {
+    frequency::detect_language(text).to_string()
 }
