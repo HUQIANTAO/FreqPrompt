@@ -1,0 +1,16 @@
+{
+  "name": "freqprompt",
+  "version": "0.1.0",
+  "description": "Prompt optimization tool based on Textual Frequency Law",
+  "type": "module",
+  "scripts": {
+    "build:wasm": "cd ../crates/wasm-bridge && wasm-pack build --target web && cp -r pkg ../../web/src/wasm-pkg",
+    "build:web": "rolldown -c rolldown.config.mjs",
+    "build": "npm run build:wasm && npm run build:web",
+    "serve": "cd dist && python3 -m http.server 8888",
+    "dev": "rolldown -c rolldown.config.mjs --watch"
+  },
+  "devDependencies": {
+    "rolldown": "^1.0.3"
+  }
+}

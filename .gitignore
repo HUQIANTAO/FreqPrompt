@@ -1,0 +1,29 @@
+# Rust
+crates/*/target/
+crates/*/pkg/
+target/
+
+# Node
+web/node_modules/
+web/dist/
+web/src/wasm-pkg/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Env
+.env
+.env.local
+
+# CodePilot
+.codepilot-uploads/
+
+# Large files
+*.pdf
