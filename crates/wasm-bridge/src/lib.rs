@@ -30,10 +30,10 @@ pub fn score_sentences(json_input: &str) -> String {
 }
 
 /// Optimize: given an original sentence and paraphrase candidates,
-/// compute frequency scores and return the best.
+/// compute frequency scores (arithmetic mean) and return the best.
 ///
 /// Language is auto-detected from the original text.
-/// Works with both English (whitespace tokenizer) and Chinese (jieba segmentation).
+/// Works with both English (whitespace tokenizer) and Chinese (FMM tokenizer).
 ///
 /// Input JSON: {"original": "...", "candidates": ["...", "..."]}
 /// Output JSON: {"original": {text, zipf_score}, "optimized": {text, zipf_score}, "candidates": [...]}
@@ -51,11 +51,8 @@ pub fn optimize_prompt(json_input: &str) -> String {
     });
 
     let lang = frequency::detect_language(&input.original);
-
-    // Score original
     let original_score = frequency::sentence_zipf_lang(&input.original, lang);
 
-    // Score all candidates
     let mut all: Vec<FrequencyResult> = input
         .candidates
         .iter()
@@ -65,13 +62,11 @@ pub fn optimize_prompt(json_input: &str) -> String {
         })
         .collect();
 
-    // Add original
     all.push(FrequencyResult {
         text: input.original.clone(),
         zipf_score: original_score,
     });
 
-    // Sort by score descending
     all.sort_by(|a, b| {
         b.zipf_score
             .partial_cmp(&a.zipf_score)
@@ -90,15 +85,52 @@ pub fn optimize_prompt(json_input: &str) -> String {
         });
 
     let result = OptimizeResult {
-        original: FrequencyResult {
-            text: input.original,
-            zipf_score: original_score,
-        },
+        original: FrequencyResult { text: input.original, zipf_score: original_score },
         optimized,
         candidates: all,
     };
 
     serde_json::to_string(&result).unwrap_or_else(|_| "{}".to_string())
+}
+
+/// Return the N lowest-scoring tokens in a sentence.
+/// Used for targeted word-level refinement: the frontend sends
+/// these low-frequency words back to the LLM so it can replace them.
+///
+/// Input JSON: {"sentence": "...", "n": 5}
+/// Output JSON: array of {text, zipf_score} sorted by score ascending.
+#[wasm_bindgen]
+pub fn lowest_tokens(json_input: &str) -> String {
+    #[derive(serde::Deserialize)]
+    struct LowTokensInput {
+        sentence: String,
+        n: usize,
+    }
+
+    let input: LowTokensInput = serde_json::from_str(json_input).unwrap_or_else(|_| {
+        LowTokensInput { sentence: String::new(), n: 5 }
+    });
+
+    let tokens = frequency::lowest_tokens(&input.sentence, input.n);
+    let results: Vec<FrequencyResult> = tokens
+        .into_iter()
+        .map(|(text, zipf_score)| FrequencyResult { text, zipf_score })
+        .collect();
+    serde_json::to_string(&results).unwrap_or_else(|_| "[]".to_string())
+}
+
+/// Tokenize a sentence and return per-token (word, zipf_score) pairs.
+/// Input: a single sentence string.
+/// Output: JSON array of {text, zipf_score} in token order.
+#[wasm_bindgen]
+pub fn tokenize_and_score(json_input: &str) -> String {
+    let sentence: String = serde_json::from_str(json_input).unwrap_or_default();
+    let tokens = frequency::tokenize_and_score(&sentence);
+    let results: Vec<FrequencyResult> = tokens
+        .into_iter()
+        .map(|(text, zipf_score)| FrequencyResult { text, zipf_score })
+        .collect();
+    serde_json::to_string(&results).unwrap_or_else(|_| "[]".to_string())
 }
 
 /// Detect the language of a text. Returns "zh" or "en".

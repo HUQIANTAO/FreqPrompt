@@ -1,7 +1,9 @@
 /**
- * LLM API client for generating paraphrases.
- * Uses OpenAI-compatible chat completions API.
- * Auto-detects language and uses appropriate system prompt.
+ * FreqPrompt v2 — LLM API client for multi-round prompt optimization.
+ *
+ * Round 1: broad diverse rewrites (6 versions).
+ * Round 2: targeted word replacement — LLM is told exactly which words
+ *          scored low and is asked to replace only those words.
  */
 
 export interface ApiConfig {
@@ -10,75 +12,96 @@ export interface ApiConfig {
   modelId: string;
 }
 
-const PARAPHRASE_SYSTEM_EN = `You are a linguistic expert specializing in rephrasing text. Your task is to rewrite the given prompt using more common, higher-frequency English words while preserving the EXACT meaning.
+/* ═══════════════ ROUND 1: Broad Rewrites ═══════════════ */
+
+const R1_SYSTEM_EN = `You are a linguistic expert. Rewrite the given text using more common, higher-frequency words while preserving the EXACT meaning.
 
 ## Rules:
-1. Replace uncommon/complex words with their more frequent synonyms
-2. Keep the SAME meaning — do not add, remove, or change any semantic content
+1. Replace uncommon/complex words with more frequent, everyday synonyms
+2. Keep the SAME semantic content — do not add, remove, or change meaning
 3. Maintain the same sentence structure as much as possible
-4. Output ONLY the rewritten sentences, one per line, without numbering or prefixes
-5. Generate exactly 6 different versions, each on its own line
+4. Generate exactly 6 different versions, each on its own line
+5. Vary the "formality level" from very casual to slightly formal
 
-## Example:
-Original: "Elucidate the ramifications of the fiscal policy alterations upon macroeconomic equilibrium."
-Output:
-Explain the effects of the tax policy changes on the overall economy.
-Describe how changes in government spending affect the economic balance.
-Show the impact of financial policy shifts on the broader economy.
-Tell me the results of changing money policies on the whole economic system.
-Break down what spending policy changes do to the economy as a whole.
-What happens to the economy when the government changes its spending policies?
+## Why this matters:
+Language models process high-frequency words faster and more accurately. Replacing rare words with common synonyms improves LLM output quality without changing what you're asking.
 
-Now rewrite the following prompt into 6 higher-frequency versions. Output ONLY the 6 rewritten sentences, one per line:`;
+Now rewrite into 6 higher-frequency versions (output ONLY the 6 lines):`;
 
-const PARAPHRASE_SYSTEM_ZH = `你是一位精通中文表达的语言学专家。你的任务是用更高频、更常见的汉语词汇重新表达给定的提示词，同时完全保留语义。
+const R1_SYSTEM_ZH = `你是一位中文语言学专家。请用更高频、更常见的汉语词汇重写给定文本，严格保持原意。
+
+## 替换策略：
+1. 书面语 → 口语：是否→是不是/吗、进行→做、该（问题）→这个（问题）、上述→上面说的、其→它的/他的、此→这、如何→怎么、为何→为什么、均→都、仅→只、若→如果
+2. 学术词 → 日常词：阐述→说明/解释、呈现→表现出、具备→有、实施→执行/做、优化→改进、利用→用、导致→造成、以及→和、因此→所以、然而→但是
+3. 压缩冗余：删除"在……方面""对于……来说"等虚词结构
+
+## 版本多样性：
+- 版本 1：最口语，像聊天
+- 版本 2-3：通俗易懂，新闻/科普风格
+- 版本 4-5：稍正式但依然常见
+- 版本 6：保留专业感但不生僻
+
+## 输出格式：每行一个版本，共 6 行，不要编号或解释。
+
+现在请重写以下文本，生成 6 个高频词汇版本：`;
+
+/* ═══════════════ ROUND 2: Targeted Word Replacement ═══════════════ */
+
+const R2_SYSTEM_EN = `You are a linguistic expert. Your task is to replace SPECIFIC low-frequency words in a text with higher-frequency synonyms.
+
+## What to do:
+Below is a sentence and a list of words that scored LOW on the Zipf frequency scale (meaning they're rare/uncommon). Your job is to rewrite the sentence by replacing ONLY those low-frequency words with more common alternatives. Keep everything else unchanged.
+
+## Rules:
+1. ONLY change the listed low-frequency words — leave the rest of the sentence intact
+2. For each low-frequency word, find the most common synonym that preserves meaning
+3. If a low-frequency word has no good common synonym, try rephrasing just that phrase
+4. Generate exactly 4 versions, each on its own line
+5. Each version should use different synonym choices
+
+Output ONLY the 4 rewritten sentences, one per line. No numbering or explanation.`;
+
+const R2_SYSTEM_ZH = `你是一位中文词汇频率专家。你的任务是**只替换**句子中频率较低的词，用更常见的近义词替代。
+
+## 任务说明
+下面会给你一个句子，以及其中词频得分较低的词（分数越低 = 越生僻）。请重写句子，**只替换这些低频词**，其他部分保持不变。
 
 ## 规则：
-1. 将生僻、书面化的词汇替换为更常见、更口语化的近义词
-2. 保持完全相同的语义——不得添加、删除或改变任何语义内容
-3. 尽量保持相同的句式结构
-4. 只输出改写后的句子，每行一个，不要编号或前缀
-5. 生成恰好 6 个不同版本，每行一个
-6. 使用现代标准汉语，避免文言文或过于口语化的表达
+1. 只改列出的低频词——句子其余部分保持原样
+2. 每个低频词找一个最常用的近义词替代
+3. 如果一个词没有好的近义词，试着改写那个短语
+4. 生成 4 个版本，每行一个
+5. 每个版本用不同的近义词选择
 
-## 示例：
-原文："请阐述财政政策调整对宏观经济均衡状态的影响机制。"
-输出：
-请说明财政政策变化如何影响宏观经济的平衡。
-请解释政府调整财政政策对整体经济稳定有什么作用。
-请分析改变财政政策会给经济平衡带来什么影响。
-请描述财政政策变动对宏观经济会产生哪些作用。
-请谈谈调整财政政策是怎么影响整个经济体系的。
-请讲讲政府改变财政政策会怎样影响经济的平衡状态。
+## 替换示例：
+阐述(低分)→说明/解释/讲清楚  ·  实施(低分)→执行/落实/做  ·  该(低分)→这个  ·  上述(低分)→上面说的  ·  其(低分)→它的/他的  ·  促进(低分)→推动/帮助  ·  路径(低分)→方法/方式/做法
 
-现在请将以下提示词改写成 6 个更高频词汇的版本。只输出 6 个改写后的句子，每行一个：`;
+只输出 4 行改写结果，不要编号或解释。`;
 
-/** Detect if text is primarily Chinese (CJK characters) */
+/* ═══════════════ API Client ═══════════════ */
+
 function isChinese(text: string): boolean {
-  let cjk = 0;
-  let total = 0;
+  let cjk = 0, total = 0;
   for (const c of text) {
     if (c.trim() === '') continue;
     total++;
     const code = c.codePointAt(0)!;
-    if (
-      (code >= 0x4E00 && code <= 0x9FFF) || // CJK Unified
-      (code >= 0x3400 && code <= 0x4DBF) || // CJK Extension A
-      (code >= 0x3000 && code <= 0x303F)    // CJK Punctuation
-    ) {
+    if ((code >= 0x4E00 && code <= 0x9FFF) ||
+        (code >= 0x3400 && code <= 0x4DBF) ||
+        (code >= 0x3000 && code <= 0x303F)) {
       cjk++;
     }
   }
   return total > 0 && cjk / total > 0.3;
 }
 
-export async function generateParaphrases(
-  originalPrompt: string,
-  config: ApiConfig
+async function callLLM(
+  systemPrompt: string,
+  userMessage: string,
+  config: ApiConfig,
+  temperature: number = 0.8
 ): Promise<string[]> {
   const url = `${config.baseUrl.replace(/\/$/, '')}/chat/completions`;
-  const chinese = isChinese(originalPrompt);
-  const systemPrompt = chinese ? PARAPHRASE_SYSTEM_ZH : PARAPHRASE_SYSTEM_EN;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -90,9 +113,9 @@ export async function generateParaphrases(
       model: config.modelId,
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: originalPrompt },
+        { role: 'user', content: userMessage },
       ],
-      temperature: 0.8,
+      temperature,
       max_tokens: 2000,
     }),
   });
@@ -104,18 +127,52 @@ export async function generateParaphrases(
 
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content;
+  if (!content) throw new Error('API returned empty response');
 
-  if (!content) {
-    throw new Error('API returned empty response');
-  }
-
-  // Parse the response: each line is a paraphrase
-  const lines = content
+  return content
     .split('\n')
     .map((l: string) => l.trim())
     .filter((l: string) => l.length > 0)
     .map((l: string) => l.replace(/^\d+[\.\)、]\s*/, '').trim())
     .filter((l: string) => l.length > 5);
+}
 
+/** Round 1: Generate 6 broad, diverse paraphrases. */
+export async function generateParaphrases(
+  originalPrompt: string,
+  config: ApiConfig
+): Promise<string[]> {
+  const zh = isChinese(originalPrompt);
+  const system = zh ? R1_SYSTEM_ZH : R1_SYSTEM_EN;
+  const lines = await callLLM(system, originalPrompt, config, 0.8);
   return lines.slice(0, 6);
+}
+
+/**
+ * Round 2: Targeted replacement of specific low-frequency words.
+ *
+ * @param currentBest — the best result from Round 1
+ * @param lowWords — list of {word, score} pairs that scored lowest
+ * @param config — API configuration
+ * @returns up to 4 targeted rewrites
+ */
+export async function targetedReplace(
+  currentBest: string,
+  lowWords: { text: string; zipf_score: number }[],
+  config: ApiConfig
+): Promise<string[]> {
+  const zh = isChinese(currentBest);
+  const system = zh ? R2_SYSTEM_ZH : R2_SYSTEM_EN;
+
+  // Build a clear list of words to replace
+  const wordList = lowWords
+    .map(w => `  - "${w.text}" (频率分: ${w.zipf_score.toFixed(1)})`)
+    .join('\n');
+
+  const userMessage = zh
+    ? `原始句子：\n${currentBest}\n\n需要替换的低频词（分数越低越需要换）：\n${wordList}\n\n请只替换这些词，生成 4 个版本：`
+    : `Original sentence:\n${currentBest}\n\nLow-frequency words to replace (lower = rarer):\n${wordList}\n\nReplace only these words, generate 4 versions:`;
+
+  const lines = await callLLM(system, userMessage, config, 0.6);
+  return lines.slice(0, 4);
 }

@@ -1,16 +1,19 @@
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { copyFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readdirSync, existsSync, rmSync } from 'node:fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('rolldown').RolldownConfig} */
 export default {
-  input: resolve(__dirname, 'src/main.ts'),
+  input: {
+    main: resolve(__dirname, 'src/main.ts'),
+    'frequency.worker': resolve(__dirname, 'src/frequency.worker.ts'),
+  },
   output: {
     dir: resolve(__dirname, 'dist'),
     format: 'esm',
-    entryFileNames: 'bundle.js',
+    entryFileNames: '[name].js',
   },
   resolve: {
     extensions: ['.ts', '.js'],
@@ -24,7 +27,15 @@ export default {
       name: 'copy-assets',
       async buildEnd() {
         const distDir = resolve(__dirname, 'dist');
+        const wasmSrcDir = resolve(__dirname, 'wasm-pkg');
+        const wasmDstDir = resolve(distDir, 'wasm-pkg');
+
+        // Clean and recreate dist
+        if (existsSync(distDir)) {
+          rmSync(distDir, { recursive: true, force: true });
+        }
         mkdirSync(distDir, { recursive: true });
+        mkdirSync(wasmDstDir, { recursive: true });
 
         // Copy index.html
         copyFileSync(
@@ -32,19 +43,17 @@ export default {
           resolve(distDir, 'index.html')
         );
 
-        // Copy wasm-pkg from src/ to dist/
-        const wasmSrcDir = resolve(__dirname, 'src', 'wasm-pkg');
-        const wasmDstDir = resolve(distDir, 'wasm-pkg');
-        mkdirSync(wasmDstDir, { recursive: true });
-
-        for (const file of readdirSync(wasmSrcDir)) {
-          copyFileSync(
-            resolve(wasmSrcDir, file),
-            resolve(wasmDstDir, file)
-          );
+        // Copy wasm-pkg
+        if (existsSync(wasmSrcDir)) {
+          for (const file of readdirSync(wasmSrcDir)) {
+            copyFileSync(
+              resolve(wasmSrcDir, file),
+              resolve(wasmDstDir, file)
+            );
+          }
         }
 
-        console.log('✅ Copied index.html and wasm-pkg to dist/');
+        console.log('✅ Built + copied assets to dist/');
       },
     },
   ],
