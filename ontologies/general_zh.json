@@ -1,0 +1,96 @@
+{
+  "domain": "general",
+  "lang": "zh",
+  "concepts": {
+    "阐述": {
+      "id": "general:elaborate",
+      "text": "阐述",
+      "hypernyms": ["说明"],
+      "hyponyms": [],
+      "siblings": ["阐释", "论述"],
+      "domain": "general",
+      "aliases": ["详细说明"]
+    },
+    "说明": {
+      "id": "general:explain",
+      "text": "说明",
+      "hypernyms": [],
+      "hyponyms": ["阐述", "解释", "讲解"],
+      "siblings": [],
+      "domain": "general",
+      "aliases": ["解释", "讲解"]
+    },
+    "影响": {
+      "id": "general:impact",
+      "text": "影响",
+      "hypernyms": [],
+      "hyponyms": ["正面影响", "负面影响", "直接影响", "间接影响"],
+      "siblings": ["效果", "作用"],
+      "domain": "general",
+      "aliases": ["作用", "效果"]
+    },
+    "机制": {
+      "id": "general:mechanism",
+      "text": "机制",
+      "hypernyms": [],
+      "hyponyms": ["传导机制", "反馈机制", "调节机制"],
+      "siblings": ["过程", "流程"],
+      "domain": "general",
+      "aliases": ["机理"]
+    },
+    "过程": {
+      "id": "general:process",
+      "text": "过程",
+      "hypernyms": [],
+      "hyponyms": [],
+      "siblings": ["机制", "流程"],
+      "domain": "general",
+      "aliases": ["流程", "进程"]
+    },
+    "调整": {
+      "id": "general:adjust",
+      "text": "调整",
+      "hypernyms": ["变动"],
+      "hyponyms": [],
+      "siblings": ["变化", "改变"],
+      "domain": "general",
+      "aliases": ["调节"]
+    },
+    "变化": {
+      "id": "general:change",
+      "text": "变化",
+      "hypernyms": [],
+      "hyponyms": ["调整", "改变", "转变"],
+      "siblings": [],
+      "domain": "general",
+      "aliases": ["变动"]
+    },
+    "分析": {
+      "id": "general:analyze",
+      "text": "分析",
+      "hypernyms": [],
+      "hyponyms": ["定量分析", "定性分析", "比较分析"],
+      "siblings": ["研究", "探讨"],
+      "domain": "general",
+      "aliases": ["剖析"]
+    },
+    "比较": {
+      "id": "general:compare",
+      "text": "比较",
+      "hypernyms": [],
+      "hyponyms": ["对比", "对照"],
+      "siblings": ["对比"],
+      "domain": "general",
+      "aliases": ["对比"]
+    },
+    "评估": {
+      "id": "general:evaluate",
+      "text": "评估",
+      "hypernyms": [],
+      "hyponyms": ["评价", "评定"],
+      "siblings": ["评价"],
+      "domain": "general",
+      "aliases": ["评价", "评定"]
+    }
+  }
+}

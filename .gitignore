@@ -25,5 +25,8 @@ Thumbs.db
 # CodePilot
 .codepilot-uploads/
 
+# KunSDD plans
+.kunsdd/
+
 # Large files
 *.pdf

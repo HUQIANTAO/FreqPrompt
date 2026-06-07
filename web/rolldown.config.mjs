@@ -1,8 +1,21 @@
-import { resolve, dirname } from 'node:path';
+import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { copyFileSync, mkdirSync, readdirSync, existsSync, rmSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readdirSync, existsSync, rmSync, statSync } from 'node:fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+function copyDirSync(src, dst) {
+  mkdirSync(dst, { recursive: true });
+  for (const entry of readdirSync(src)) {
+    const srcPath = join(src, entry);
+    const dstPath = join(dst, entry);
+    if (statSync(srcPath).isDirectory()) {
+      copyDirSync(srcPath, dstPath);
+    } else {
+      copyFileSync(srcPath, dstPath);
+    }
+  }
+}
 
 /** @type {import('rolldown').RolldownConfig} */
 export default {
@@ -27,7 +40,7 @@ export default {
       name: 'copy-assets',
       async buildEnd() {
         const distDir = resolve(__dirname, 'dist');
-        const wasmSrcDir = resolve(__dirname, 'wasm-pkg');
+        const wasmSrcDir = resolve(__dirname, 'src', 'wasm-pkg');
         const wasmDstDir = resolve(distDir, 'wasm-pkg');
 
         // Clean and recreate dist
@@ -43,6 +56,12 @@ export default {
           resolve(distDir, 'index.html')
         );
 
+        // Copy styles.css
+        copyFileSync(
+          resolve(__dirname, 'styles.css'),
+          resolve(distDir, 'styles.css')
+        );
+
         // Copy wasm-pkg
         if (existsSync(wasmSrcDir)) {
           for (const file of readdirSync(wasmSrcDir)) {
@@ -51,6 +70,13 @@ export default {
               resolve(wasmDstDir, file)
             );
           }
+        }
+
+        // Copy ontologies (v3 Sprint 2)
+        const ontoSrcDir = resolve(__dirname, '..', 'ontologies');
+        const ontoDstDir = resolve(distDir, 'ontologies');
+        if (existsSync(ontoSrcDir)) {
+          copyDirSync(ontoSrcDir, ontoDstDir);
         }
 
         console.log('✅ Built + copied assets to dist/');

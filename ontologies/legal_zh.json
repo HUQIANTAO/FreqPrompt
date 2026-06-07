@@ -1,0 +1,96 @@
+{
+  "domain": "legal",
+  "lang": "zh",
+  "concepts": {
+    "法律": {
+      "id": "legal:law",
+      "text": "法律",
+      "hypernyms": [],
+      "hyponyms": ["刑法", "民法", "行政法", "宪法"],
+      "siblings": [],
+      "domain": "legal",
+      "aliases": ["法规", "法条"]
+    },
+    "刑法": {
+      "id": "legal:criminal_law",
+      "text": "刑法",
+      "hypernyms": ["法律"],
+      "hyponyms": ["故意犯罪", "过失犯罪", "刑罚"],
+      "siblings": ["民法", "行政法"],
+      "domain": "legal",
+      "aliases": ["刑事法", "刑事法律"]
+    },
+    "民法": {
+      "id": "legal:civil_law",
+      "text": "民法",
+      "hypernyms": ["法律"],
+      "hyponyms": ["合同法", "侵权法", "婚姻法", "继承法"],
+      "siblings": ["刑法", "行政法"],
+      "domain": "legal",
+      "aliases": ["民事法", "民事法律"]
+    },
+    "合同法": {
+      "id": "legal:contract_law",
+      "text": "合同法",
+      "hypernyms": ["民法"],
+      "hyponyms": ["违约金", "违约责任", "合同解除"],
+      "siblings": ["侵权法", "婚姻法"],
+      "domain": "legal",
+      "aliases": ["契约法"]
+    },
+    "侵权法": {
+      "id": "legal:tort_law",
+      "text": "侵权法",
+      "hypernyms": ["民法"],
+      "hyponyms": ["人身侵权", "财产侵权", "精神损害赔偿"],
+      "siblings": ["合同法", "婚姻法"],
+      "domain": "legal",
+      "aliases": ["侵权责任法"]
+    },
+    "诉讼": {
+      "id": "legal:litigation",
+      "text": "诉讼",
+      "hypernyms": ["法律"],
+      "hyponyms": ["民事诉讼", "刑事诉讼", "行政诉讼"],
+      "siblings": ["仲裁", "调解"],
+      "domain": "legal",
+      "aliases": ["打官司", "起诉"]
+    },
+    "仲裁": {
+      "id": "legal:arbitration",
+      "text": "仲裁",
+      "hypernyms": ["法律"],
+      "hyponyms": ["商事仲裁", "劳动仲裁"],
+      "siblings": ["诉讼", "调解"],
+      "domain": "legal",
+      "aliases": ["公断"]
+    },
+    "知识产权": {
+      "id": "legal:ip",
+      "text": "知识产权",
+      "hypernyms": ["法律"],
+      "hyponyms": ["专利权", "商标权", "著作权"],
+      "siblings": [],
+      "domain": "legal",
+      "aliases": ["IP", "知识财产"]
+    },
+    "专利权": {
+      "id": "legal:patent",
+      "text": "专利权",
+      "hypernyms": ["知识产权"],
+      "hyponyms": ["发明专利", "实用新型", "外观设计"],
+      "siblings": ["商标权", "著作权"],
+      "domain": "legal",
+      "aliases": ["专利"]
+    },
+    "商标权": {
+      "id": "legal:trademark",
+      "text": "商标权",
+      "hypernyms": ["知识产权"],
+      "hyponyms": [],
+      "siblings": ["专利权", "著作权"],
+      "domain": "legal",
+      "aliases": ["商标", "品牌权"]
+    }
+  }
+}

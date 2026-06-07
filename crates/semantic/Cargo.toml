@@ -1,0 +1,13 @@
+[package]
+name = "semantic"
+version = "0.1.0"
+edition = "2021"
+description = "Slot-based semantic preservation layer for FreqPrompt v3"
+license = "MIT"
+
+[dependencies]
+frequency = { path = "../frequency" }
+serde = { version = "1", features = ["derive"] }
+
+[lib]
+crate-type = ["rlib"]

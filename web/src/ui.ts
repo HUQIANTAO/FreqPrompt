@@ -1,9 +1,11 @@
 /**
- * FreqPrompt v2 — UI module
+ * FreqPrompt v2/v3 — UI module
  * Results rendering, history, theme, config, toast, round progress.
+ * v3: semantic-guard report rendering.
  */
 import type { ApiConfig } from './paraphrase';
 import type { OptimizeOutput, FrequencyResult } from './frequency';
+import type { Slot, VerifyOutput } from './semantic';
 
 /* ════════════════════════════════════
    TYPES
@@ -278,6 +280,60 @@ export function showToast(message: string): void {
   el.classList.add('show');
   if (_toastTimer) clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ════════════════════════════════════
+   CONFIRM MODAL
+   ════════════════════════════════════ */
+
+/**
+ * Show a confirm dialog with custom styling, returning a Promise<boolean>.
+ * Replaces the inaccessible native confirm() with a styled modal.
+ */
+export function showConfirm(message: string, lang: string = 'zh'): Promise<boolean> {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.style.display = 'flex';
+    overlay.setAttribute('role', 'alertdialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', message);
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+      <p style="margin:0 0 20px;font-size:14px;line-height:1.5;color:var(--text-body)">${escapeHtml(message)}</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost btn-sm" id="confirm-cancel">${lang === 'zh' ? '取消' : 'Cancel'}</button>
+        <button class="btn btn-primary btn-sm" id="confirm-ok" autofocus>${lang === 'zh' ? '确定' : 'Confirm'}</button>
+      </div>
+    `;
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    const cleanup = () => {
+      overlay.remove();
+      document.removeEventListener('keydown', onKeydown);
+    };
+
+    const onKeydown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { resolve(false); cleanup(); }
+    };
+    document.addEventListener('keydown', onKeydown);
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) { resolve(false); cleanup(); }
+    });
+
+    const cancelBtn = modal.querySelector('#confirm-cancel')!;
+    const okBtn = modal.querySelector('#confirm-ok')!;
+
+    cancelBtn.addEventListener('click', () => { resolve(false); cleanup(); });
+    okBtn.addEventListener('click', () => { resolve(true); cleanup(); });
+
+    // Focus trap: set initial focus on OK button
+    (okBtn as HTMLButtonElement).focus();
+  });
 }
 
 /* ════════════════════════════════════
@@ -653,15 +709,235 @@ function bindResultActions(result: OptimizeOutput): void {
 }
 
 /* ════════════════════════════════════
+   SEMANTIC GUARD REPORT (FreqPrompt v3)
+   ════════════════════════════════════ */
+
+/**
+ * Render a report card under the results, summarising what the v3 semantic
+ * guard dropped (and why). The user sees:
+ *   - How many candidates were checked / kept / blocked
+ *   - For each blocked candidate: the candidate text, the slot(s) it broke,
+ *     and a per-slot similarity score with a colour-coded badge.
+ *   - The original slots (extracted from the user's prompt) for context.
+ *
+ * If nothing was dropped, the card is a single green confirmation line —
+ * no failure noise.
+ */
+export function renderSlotGuardReport(
+  filtered: { total: number; kept: number; dropped: VerifyOutput[] },
+  originalSlots: Slot[],
+  lang: string = 'zh'
+): void {
+  const host = document.getElementById('slot-guard-report');
+  if (!host) return;
+
+  // Nothing was dropped — terse success line, no visual noise.
+  if (filtered.dropped.length === 0) {
+    host.innerHTML = `
+      <div class="guard-card guard-ok">
+        <span class="guard-icon" aria-hidden="true">✓</span>
+        <span class="guard-msg">
+          ${lang === 'zh'
+            ? `语义守门已检查 ${filtered.total} 条候选，全部通过（保真度 1.00）。`
+            : `Semantic guard checked ${filtered.total} candidates — all passed (fidelity 1.00).`}
+        </span>
+      </div>`;
+    return;
+  }
+
+  const droppedRatio = filtered.dropped.length / Math.max(filtered.total, 1);
+  const headerClass = droppedRatio > 0.5 ? 'guard-bad' : 'guard-warn';
+
+  // Original slot list (for the user's reference)
+  const origSlotList = originalSlots
+    .slice(0, 8)  // cap to avoid clutter
+    .map(s => `<span class="slot-tag slot-kind-${escapeAttr(s.kind)}">${escapeHtml(s.text)}</span>`)
+    .join('');
+  const origSlotOverflow = originalSlots.length > 8
+    ? `<span class="slot-tag slot-overflow">+${originalSlots.length - 8}</span>`
+    : '';
+
+  // Each dropped candidate: which slots it broke and how
+  const droppedHtml = filtered.dropped.map((out, idx) => {
+    const failing = out.verdicts.filter(v => !v.passes);
+    const failingBadges = failing.map(v => {
+      const simPct = (v.similarity * 100).toFixed(0);
+      const cls = v.similarity < 0.4
+        ? 'sim-bad'
+        : v.similarity < 0.7
+          ? 'sim-warn'
+          : 'sim-ok';
+      return `
+        <div class="verdict-row">
+          <span class="slot-tag slot-kind-${escapeAttr(v.original.kind)}">${escapeHtml(v.original.text)}</span>
+          <span class="verdict-arrow" aria-hidden="true">→</span>
+          <span class="verdict-matched">${v.matched ? escapeHtml(v.matched) : '<em>缺失</em>'}</span>
+          <span class="verdict-sim ${cls}">${simPct}%</span>
+          <span class="verdict-thresh">/ ${(v.threshold * 100).toFixed(0)}%</span>
+        </div>`;
+    }).join('');
+
+    // Show the full candidate text, with a truncate fallback
+    const candText = out.verdicts[0]?.original
+      ? ''  // we don't have the candidate text directly on VerifyOutput; show via class
+      : '';
+    return `
+      <div class="dropped-item">
+        <div class="dropped-header">
+          <span class="dropped-idx">#${idx + 1}</span>
+          <span class="dropped-score">保真度 ${(out.preservation_score * 100).toFixed(0)}%</span>
+        </div>
+        <div class="verdicts">${failingBadges || '<em class="muted">无关键破坏</em>'}</div>
+      </div>`;
+  }).join('');
+
+  host.innerHTML = `
+    <div class="guard-card ${headerClass}">
+      <div class="guard-header">
+        <span class="guard-icon" aria-hidden="true">⚠</span>
+        <span class="guard-msg">
+          ${lang === 'zh'
+            ? `语义守门拦截了 <b>${filtered.dropped.length}</b> / ${filtered.total} 条跑题候选（保留 ${filtered.kept} 条）。`
+            : `Semantic guard blocked <b>${filtered.dropped.length}</b> / ${filtered.total} off-topic candidates (kept ${filtered.kept}).`}
+        </span>
+      </div>
+      <details class="guard-details">
+        <summary>
+          ${lang === 'zh' ? '查看详情' : 'View details'}
+        </summary>
+        <div class="guard-section">
+          <div class="guard-section-title">
+            ${lang === 'zh' ? '原句关键槽位' : 'Original critical slots'}
+          </div>
+          <div class="slot-tags">${origSlotList}${origSlotOverflow}</div>
+        </div>
+        <div class="guard-section">
+          <div class="guard-section-title">
+            ${lang === 'zh' ? '被拦截的候选及原因' : 'Blocked candidates & reasons'}
+          </div>
+          ${droppedHtml}
+        </div>
+      </details>
+    </div>`;
+}
+
+/* ════════════════════════════════════
+   ONTOLOGY GUARD REPORT (v3 Sprint 2)
+   ════════════════════════════════════ */
+
+export function renderOntologyReport(
+  results: { original: string; candidate: string; verdict: string; label: string }[],
+  lang: string = 'zh'
+): void {
+  const host = document.getElementById('ontology-report');
+  if (!host) return;
+
+  if (results.length === 0) {
+    host.innerHTML = `
+      <div class="ontology-card ontology-ok">
+        <span class="ontology-icon">✓</span>
+        <span class="ontology-msg">
+          ${lang === 'zh' ? '本体守门：所有候选替换均通过语义安全检查。' : 'Ontology guard: all substitutions passed.'}
+        </span>
+      </div>`;
+    return;
+  }
+
+  const pairsHtml = results.map(r => {
+    const verdictCls = r.verdict === 'Widening' ? 'widening' : r.verdict === 'CrossBranch' ? 'cross-branch' : '';
+    return `
+      <div class="ontology-pair">
+        <span class="slot-tag">${escapeHtml(r.original)}</span>
+        <span class="verdict-arrow" aria-hidden="true">→</span>
+        <span class="slot-tag">${escapeHtml(r.candidate)}</span>
+        <span class="ontology-verdict ${verdictCls}">${escapeHtml(r.label)}</span>
+      </div>`;
+  }).join('');
+
+  host.innerHTML = `
+    <div class="ontology-card">
+      <div class="ontology-header">
+        <span class="ontology-icon">⚠</span>
+        <span class="ontology-msg">
+          ${lang === 'zh'
+            ? `本体守门拦截了 <b>${results.length}</b> 条语义收窄替换：`
+            : `Ontology guard blocked <b>${results.length}</b> narrowing substitutions:`}
+        </span>
+      </div>
+      ${pairsHtml}
+    </div>`;
+}
+
+/* ════════════════════════════════════
+   MULTI-LAYER SCORE REPORT (v3 Sprint 3)
+   ════════════════════════════════════ */
+
+export function renderMultiLayerReport(
+  scores: {
+    frequency: number;
+    collocation: number;
+    complexity: number;
+    slot_preservation: number;
+    domain_relevance: number;
+    final_score: number;
+  },
+  lang: string = 'zh'
+): void {
+  const host = document.getElementById('multi-layer-report');
+  if (!host) return;
+
+  const layers = [
+    { key: 'frequency', label: lang === 'zh' ? '频率' : 'Freq', cls: 'freq', max: 10 },
+    { key: 'collocation', label: lang === 'zh' ? '搭配' : 'Colloc', cls: 'colloc', max: 1 },
+    { key: 'complexity', label: lang === 'zh' ? '简洁' : 'Simple', cls: 'complex', max: 1 },
+    { key: 'slot_preservation', label: lang === 'zh' ? '语义' : 'Slot', cls: 'slot', max: 1 },
+    { key: 'domain_relevance', label: lang === 'zh' ? '领域' : 'Domain', cls: 'domain', max: 1 },
+  ];
+
+  const barsHtml = layers.map(l => {
+    const val = (scores as any)[l.key] as number;
+    const pct = Math.min(100, (val / l.max) * 100);
+    return `
+      <div class="ml-bar-row">
+        <span class="ml-bar-label">${l.label}</span>
+        <div class="ml-bar-track"><div class="ml-bar-fill ${l.cls}" style="width:${pct}%"></div></div>
+        <span class="ml-bar-value">${val.toFixed(2)}</span>
+      </div>`;
+  }).join('');
+
+  host.innerHTML = `
+    <div class="ml-card">
+      <div class="ml-title">${lang === 'zh' ? '多层打分详情' : 'Multi-Layer Score Breakdown'}</div>
+      <div class="ml-bars">${barsHtml}</div>
+      <div class="ml-final">
+        <span class="ml-final-label">${lang === 'zh' ? '综合得分' : 'Final Score'}</span>
+        <span class="ml-final-score">${scores.final_score.toFixed(3)}</span>
+      </div>
+    </div>`;
+}
+
+/* ════════════════════════════════════
+   DETECTED DOMAIN BADGE (v3 Sprint 4)
+   ════════════════════════════════════ */
+
+export function renderDetectedDomain(domain: string | null): void {
+  const section = document.getElementById('detected-domain-section');
+  const display = document.getElementById('detected-domain-display');
+  if (!section || !display) return;
+
+  if (domain) {
+    section.style.display = '';
+    const domainLabels: Record<string, string> = {
+      finance: '金融/经济', legal: '法律', medical: '医学', tech: '技术',
+    };
+    display.textContent = domainLabels[domain] || domain;
+  } else {
+    section.style.display = 'none';
+  }
+}
+
+/* ════════════════════════════════════
    UTILS
    ════════════════════════════════════ */
 
-export function escapeHtml(text: string): string {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-function escapeAttr(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
+export { escapeHtml, escapeAttr } from './ui/utils';

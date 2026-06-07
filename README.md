@@ -37,7 +37,9 @@ The TFL paper establishes a robust correlation between *word frequency* and *LLM
 
 FreqPrompt computes a **sentence-level frequency score** using the geometric mean of individual word frequencies:
 
-$$S_{freq}(s) = \sqrt[K]{\prod_{k=1}^{K} f(w_k)}$$
+$$
+S_{freq}(s) = \sqrt[K]{\prod_{k=1}^{K} f(w_k)}
+$$
 
 where $f(w_k)$ is the Zipf-scale frequency (0–8) of the $k$-th word in sentence $s$, and $K$ is the number of content words (stop words excluded).
 
@@ -119,7 +121,7 @@ crates/
 **Key implementation details:**
 
 - **Tokenizer**: Splits on whitespace, strips punctuation, lowercases, and filters a 200+ word stop-word list. Only content words contribute to the score.
-- **Dictionary**: 15,000 English words with Zipf-scale frequencies (0.0–8.0). Stored as a compile-time `phf::Map` (perfect hash function) for O(1) lookup with zero runtime overhead.
+- **Dictionary**: 15,000 English words with Zipf-scale frequencies (0.0–8.0). Stored as a compile-time sorted array with binary search lookup.
 - **Geometric Mean**: Computed as $\exp(\frac{1}{K} \sum \ln f(w_k))$. Using log-space avoids floating-point underflow for long sentences.
 - **WASM Interface**: Exposes `score_sentence(text: &str) -> f64` and `rank_candidates(original: &str, candidates: Vec<String>) -> JsValue` via `wasm-bindgen`.
 
@@ -229,7 +231,7 @@ FreqPrompt/
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── lib.rs             # Tokenize, geometric mean, rank
-│   │       └── wordfreq_data.rs   # 15K word-Zipf phf::Map
+│   │       └── wordfreq_data.rs   # 15K word-Zipf sorted array
 │   └── wasm-bridge/               # WASM binding layer
 │       ├── Cargo.toml
 │       └── src/
@@ -258,8 +260,8 @@ FreqPrompt/
 
 The frequency dictionary is 15,000 entries. JavaScript object lookup is fast, but the WASM approach provides:
 
-- **Type-safe, zero-copy** dictionary via `phf` compile-time perfect hashing
-- **Deterministic performance** — no JIT warm-up variance
+- **Type-safe, compile-time** dictionary via sorted arrays with binary search
+- **Predictable performance** — O(log n) lookup with minimal WASM code size
 - **Smaller bundle** — 15K entries compile to ~200 KB WASM (vs ~500 KB minified JSON)
 - **Reusability** — the `frequency` crate can be used in CLI tools, servers, or other WASM projects
 

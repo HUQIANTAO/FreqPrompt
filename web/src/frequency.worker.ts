@@ -10,6 +10,7 @@
 
 let wasm: any = null;
 let initPromise: Promise<void> | null = null;
+let wasmReady = false;
 
 async function initWasm(): Promise<void> {
   if (wasm) return;
@@ -18,6 +19,8 @@ async function initWasm(): Promise<void> {
     const mod = await import('./wasm-pkg/wasm_bridge.js');
     await mod.default();
     wasm = mod;
+    wasmReady = true;
+    (self as any).postMessage({ id: -2, ok: true, data: 'wasm-ready' });
   })();
   return initPromise;
 }
@@ -28,6 +31,14 @@ interface Request {
   args: any[];
 }
 
+/** Parse WASM JSON result, detecting silent deserialization failures. */
+function parseWasmResult(op: string, resultJson: string, inputs?: unknown): any {
+  if (!resultJson || resultJson === '[]' || resultJson === '{}' || resultJson === 'null') {
+    console.warn(`[FreqPrompt Worker] ${op} returned empty/suspicious result`, { inputs, resultJson });
+  }
+  return JSON.parse(resultJson);
+}
+
 self.addEventListener('message', async (e: MessageEvent<Request>) => {
   const { id, op, args } = e.data;
   try {
@@ -36,30 +47,83 @@ self.addEventListener('message', async (e: MessageEvent<Request>) => {
     switch (op) {
       case 'optimize_prompt': {
         const [input] = args;
-        const resultJson = wasm.optimize_prompt(JSON.stringify(input));
-        data = JSON.parse(resultJson);
+        data = parseWasmResult(op, wasm.optimize_prompt(JSON.stringify(input)), input);
         break;
       }
       case 'score_sentences': {
         const [sentences] = args;
-        const resultJson = wasm.score_sentences(JSON.stringify(sentences));
-        data = JSON.parse(resultJson);
+        data = parseWasmResult(op, wasm.score_sentences(JSON.stringify(sentences)), sentences);
         break;
       }
       case 'tokenize_and_score': {
         const [sentence] = args;
-        const resultJson = wasm.tokenize_and_score(JSON.stringify(sentence));
-        data = JSON.parse(resultJson);
+        data = parseWasmResult(op, wasm.tokenize_and_score(JSON.stringify(sentence)), sentence);
         break;
       }
       case 'lowest_tokens': {
         const [input] = args;
-        const resultJson = wasm.lowest_tokens(JSON.stringify(input));
-        data = JSON.parse(resultJson);
+        data = parseWasmResult(op, wasm.lowest_tokens(JSON.stringify(input)), input);
         break;
       }
       case 'detect_language': {
         data = wasm.detect_language(args[0]);
+        break;
+      }
+      // ── FreqPrompt v3: Semantic Guard ──
+      case 'extract_slots': {
+        const [text, lang] = args;
+        data = parseWasmResult(op, wasm.extract_slots(text, lang));
+        break;
+      }
+      case 'verify_slots': {
+        const [input] = args;
+        data = parseWasmResult(op, wasm.verify_slots(JSON.stringify(input)));
+        break;
+      }
+      case 'check_candidate_structure': {
+        const [input] = args;
+        data = parseWasmResult(op, wasm.check_candidate_structure(JSON.stringify(input)));
+        break;
+      }
+      case 'default_slot_thresholds': {
+        data = parseWasmResult(op, wasm.default_slot_thresholds());
+        break;
+      }
+      // ── FreqPrompt v3 Sprint 2: Ontology Guard ──
+      case 'check_substitution': {
+        const [input] = args;
+        data = parseWasmResult(op, wasm.check_substitution(JSON.stringify(input)));
+        break;
+      }
+      case 'batch_check_substitutions': {
+        const [input] = args;
+        data = parseWasmResult(op, wasm.batch_check_substitutions(JSON.stringify(input)));
+        break;
+      }
+      case 'detect_domain': {
+        const [input] = args;
+        data = parseWasmResult(op, wasm.detect_domain(JSON.stringify(input)));
+        break;
+      }
+      // ── FreqPrompt v3 Sprint 3: Multi-Layer Scorer ──
+      case 'multi_layer_score': {
+        const [input] = args;
+        data = parseWasmResult(op, wasm.multi_layer_score(JSON.stringify(input)));
+        break;
+      }
+      case 'default_scoring_weights': {
+        data = parseWasmResult(op, wasm.default_scoring_weights());
+        break;
+      }
+      // ── FreqPrompt v3 Sprint 4: Domain Adaptation ──
+      case 'build_domain_freq_table': {
+        const [input] = args;
+        data = parseWasmResult(op, wasm.build_domain_freq_table(JSON.stringify(input)));
+        break;
+      }
+      case 'hybrid_sentence_score': {
+        const [input] = args;
+        data = parseWasmResult(op, wasm.hybrid_sentence_score(JSON.stringify(input)));
         break;
       }
       default:

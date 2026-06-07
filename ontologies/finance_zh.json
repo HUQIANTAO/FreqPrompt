@@ -1,0 +1,258 @@
+{
+  "domain": "finance",
+  "lang": "zh",
+  "concepts": {
+    "经济政策": {
+      "id": "finance:economic_policy",
+      "text": "经济政策",
+      "hypernyms": ["政策"],
+      "hyponyms": ["财政政策", "货币政策", "贸易政策", "产业政策"],
+      "siblings": [],
+      "domain": "finance",
+      "aliases": ["经济举措"]
+    },
+    "财政政策": {
+      "id": "finance:fiscal_policy",
+      "text": "财政政策",
+      "hypernyms": ["经济政策"],
+      "hyponyms": ["税收政策", "支出政策", "公债政策"],
+      "siblings": ["货币政策", "贸易政策"],
+      "domain": "finance",
+      "aliases": ["财政举措", "财政手段", "财税政策"]
+    },
+    "货币政策": {
+      "id": "finance:monetary_policy",
+      "text": "货币政策",
+      "hypernyms": ["经济政策"],
+      "hyponyms": ["利率政策", "准备金政策", "公开市场操作"],
+      "siblings": ["财政政策"],
+      "domain": "finance",
+      "aliases": ["货币手段"]
+    },
+    "税收政策": {
+      "id": "finance:tax_policy",
+      "text": "税收政策",
+      "hypernyms": ["财政政策"],
+      "hyponyms": ["国税政策", "地税政策", "个人所得税", "企业所得税", "增值税"],
+      "siblings": ["支出政策", "公债政策"],
+      "domain": "finance",
+      "aliases": ["税收规定", "税制", "税收制度"]
+    },
+    "国税政策": {
+      "id": "finance:national_tax_policy",
+      "text": "国税政策",
+      "hypernyms": ["税收政策"],
+      "hyponyms": [],
+      "siblings": ["地税政策"],
+      "domain": "finance",
+      "aliases": ["国税规定", "国税"]
+    },
+    "地税政策": {
+      "id": "finance:local_tax_policy",
+      "text": "地税政策",
+      "hypernyms": ["税收政策"],
+      "hyponyms": [],
+      "siblings": ["国税政策"],
+      "domain": "finance",
+      "aliases": ["地税规定", "地税"]
+    },
+    "支出政策": {
+      "id": "finance:spending_policy",
+      "text": "支出政策",
+      "hypernyms": ["财政政策"],
+      "hyponyms": ["政府购买", "转移支付"],
+      "siblings": ["税收政策", "公债政策"],
+      "domain": "finance",
+      "aliases": ["财政支出", "政府支出"]
+    },
+    "政府购买": {
+      "id": "finance:government_purchase",
+      "text": "政府购买",
+      "hypernyms": ["支出政策"],
+      "hyponyms": [],
+      "siblings": ["转移支付"],
+      "domain": "finance",
+      "aliases": ["政府采购"]
+    },
+    "转移支付": {
+      "id": "finance:transfer_payment",
+      "text": "转移支付",
+      "hypernyms": ["支出政策"],
+      "hyponyms": [],
+      "siblings": ["政府购买"],
+      "domain": "finance",
+      "aliases": ["转移性支出"]
+    },
+    "公债政策": {
+      "id": "finance:debt_policy",
+      "text": "公债政策",
+      "hypernyms": ["财政政策"],
+      "hyponyms": ["国债", "地方债"],
+      "siblings": ["税收政策", "支出政策"],
+      "domain": "finance",
+      "aliases": ["债务政策", "国债政策"]
+    },
+    "宏观经济": {
+      "id": "finance:macroeconomics",
+      "text": "宏观经济",
+      "hypernyms": ["经济学"],
+      "hyponyms": ["总需求", "总供给", "GDP", "国民收入"],
+      "siblings": ["微观经济"],
+      "domain": "finance",
+      "aliases": ["总体经济", "整体经济"]
+    },
+    "微观经济": {
+      "id": "finance:microeconomics",
+      "text": "微观经济",
+      "hypernyms": ["经济学"],
+      "hyponyms": ["消费者行为", "生产者行为", "市场结构"],
+      "siblings": ["宏观经济"],
+      "domain": "finance",
+      "aliases": ["个体经济"]
+    },
+    "均衡状态": {
+      "id": "finance:equilibrium",
+      "text": "均衡状态",
+      "hypernyms": [],
+      "hyponyms": ["一般均衡", "局部均衡", "纳什均衡"],
+      "siblings": [],
+      "domain": "finance",
+      "aliases": ["均衡", "经济均衡"]
+    },
+    "影响机制": {
+      "id": "finance:impact_mechanism",
+      "text": "影响机制",
+      "hypernyms": [],
+      "hyponyms": ["传导机制", "作用路径", "因果链条"],
+      "siblings": [],
+      "domain": "finance",
+      "aliases": ["作用机制", "传导路径"]
+    },
+    "总需求": {
+      "id": "finance:aggregate_demand",
+      "text": "总需求",
+      "hypernyms": ["宏观经济"],
+      "hyponyms": ["消费需求", "投资需求", "政府需求", "净出口"],
+      "siblings": ["总供给"],
+      "domain": "finance",
+      "aliases": ["AD"]
+    },
+    "总供给": {
+      "id": "finance:aggregate_supply",
+      "text": "总供给",
+      "hypernyms": ["宏观经济"],
+      "hyponyms": ["短期总供给", "长期总供给"],
+      "siblings": ["总需求"],
+      "domain": "finance",
+      "aliases": ["AS"]
+    },
+    "GDP": {
+      "id": "finance:gdp",
+      "text": "GDP",
+      "hypernyms": ["宏观经济"],
+      "hyponyms": [],
+      "siblings": ["GNP", "NI"],
+      "domain": "finance",
+      "aliases": ["国内生产总值", "国民生产总值"]
+    },
+    "通胀": {
+      "id": "finance:inflation",
+      "text": "通胀",
+      "hypernyms": [],
+      "hyponyms": ["需求拉动型通胀", "成本推动型通胀"],
+      "siblings": ["通缩"],
+      "domain": "finance",
+      "aliases": ["通货膨胀"]
+    },
+    "通缩": {
+      "id": "finance:deflation",
+      "text": "通缩",
+      "hypernyms": [],
+      "hyponyms": [],
+      "siblings": ["通胀"],
+      "domain": "finance",
+      "aliases": ["通货紧缩"]
+    },
+    "利率": {
+      "id": "finance:interest_rate",
+      "text": "利率",
+      "hypernyms": [],
+      "hyponyms": ["基准利率", "市场利率", "实际利率", "名义利率"],
+      "siblings": ["汇率"],
+      "domain": "finance",
+      "aliases": ["利息率"]
+    },
+    "汇率": {
+      "id": "finance:exchange_rate",
+      "text": "汇率",
+      "hypernyms": [],
+      "hyponyms": ["固定汇率", "浮动汇率"],
+      "siblings": ["利率"],
+      "domain": "finance",
+      "aliases": ["外汇率"]
+    },
+    "乘数效应": {
+      "id": "finance:multiplier_effect",
+      "text": "乘数效应",
+      "hypernyms": [],
+      "hyponyms": ["财政乘数", "货币乘数", "投资乘数"],
+      "siblings": [],
+      "domain": "finance",
+      "aliases": ["乘数"]
+    },
+    "IS-LM模型": {
+      "id": "finance:is_lm_model",
+      "text": "IS-LM模型",
+      "hypernyms": [],
+      "hyponyms": [],
+      "siblings": ["AD-AS模型"],
+      "domain": "finance",
+      "aliases": ["IS-LM"]
+    },
+    "AD-AS模型": {
+      "id": "finance:ad_as_model",
+      "text": "AD-AS模型",
+      "hypernyms": [],
+      "hyponyms": [],
+      "siblings": ["IS-LM模型"],
+      "domain": "finance",
+      "aliases": ["AD-AS"]
+    },
+    "供给侧结构性改革": {
+      "id": "finance:supply_side_reform",
+      "text": "供给侧结构性改革",
+      "hypernyms": ["经济改革"],
+      "hyponyms": [],
+      "siblings": [],
+      "domain": "finance",
+      "aliases": ["供给侧改革"]
+    },
+    "市场失灵": {
+      "id": "finance:market_failure",
+      "text": "市场失灵",
+      "hypernyms": [],
+      "hyponyms": ["外部性", "公共品", "信息不对称", "垄断"],
+      "siblings": ["政府失灵"],
+      "domain": "finance",
+      "aliases": ["市场失效"]
+    },
+    "财政赤字": {
+      "id": "finance:budget_deficit",
+      "text": "财政赤字",
+      "hypernyms": [],
+      "hyponyms": [],
+      "siblings": ["财政盈余"],
+      "domain": "finance",
+      "aliases": ["赤字"]
+    },
+    "财政盈余": {
+      "id": "finance:budget_surplus",
+      "text": "财政盈余",
+      "hypernyms": [],
+      "hyponyms": [],
+      "siblings": ["财政赤字"],
+      "domain": "finance",
+      "aliases": ["盈余"]
+    }
+  }
+}

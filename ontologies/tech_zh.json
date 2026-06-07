@@ -1,0 +1,96 @@
+{
+  "domain": "tech",
+  "lang": "zh",
+  "concepts": {
+    "人工智能": {
+      "id": "tech:ai",
+      "text": "人工智能",
+      "hypernyms": [],
+      "hyponyms": ["机器学习", "自然语言处理", "计算机视觉", "强化学习"],
+      "siblings": [],
+      "domain": "tech",
+      "aliases": ["AI", "智能"]
+    },
+    "机器学习": {
+      "id": "tech:machine_learning",
+      "text": "机器学习",
+      "hypernyms": ["人工智能"],
+      "hyponyms": ["深度学习", "监督学习", "无监督学习", "迁移学习"],
+      "siblings": ["自然语言处理", "计算机视觉"],
+      "domain": "tech",
+      "aliases": ["ML"]
+    },
+    "深度学习": {
+      "id": "tech:deep_learning",
+      "text": "深度学习",
+      "hypernyms": ["机器学习"],
+      "hyponyms": ["卷积神经网络", "循环神经网络", "Transformer", "生成对抗网络"],
+      "siblings": ["监督学习", "迁移学习"],
+      "domain": "tech",
+      "aliases": ["DL", "深度神经网络"]
+    },
+    "自然语言处理": {
+      "id": "tech:nlp",
+      "text": "自然语言处理",
+      "hypernyms": ["人工智能"],
+      "hyponyms": ["文本分类", "机器翻译", "问答系统", "情感分析"],
+      "siblings": ["机器学习", "计算机视觉"],
+      "domain": "tech",
+      "aliases": ["NLP", "语言处理"]
+    },
+    "大语言模型": {
+      "id": "tech:llm",
+      "text": "大语言模型",
+      "hypernyms": ["人工智能"],
+      "hyponyms": ["GPT", "Claude", "LLaMA", "文心一言"],
+      "siblings": [],
+      "domain": "tech",
+      "aliases": ["LLM", "大模型", "语言大模型"]
+    },
+    "数据库": {
+      "id": "tech:database",
+      "text": "数据库",
+      "hypernyms": [],
+      "hyponyms": ["关系数据库", "NoSQL", "图数据库", "时序数据库"],
+      "siblings": ["数据仓库"],
+      "domain": "tech",
+      "aliases": ["DB", "数据存储"]
+    },
+    "云计算": {
+      "id": "tech:cloud_computing",
+      "text": "云计算",
+      "hypernyms": [],
+      "hyponyms": ["公有云", "私有云", "混合云", "边缘计算"],
+      "siblings": [],
+      "domain": "tech",
+      "aliases": ["云服务", "云端"]
+    },
+    "网络安全": {
+      "id": "tech:cybersecurity",
+      "text": "网络安全",
+      "hypernyms": [],
+      "hyponyms": ["防火墙", "加密", "入侵检测", "零信任"],
+      "siblings": ["数据安全"],
+      "domain": "tech",
+      "aliases": ["信息安全", "安全防护"]
+    },
+    "软件开发": {
+      "id": "tech:software_development",
+      "text": "软件开发",
+      "hypernyms": [],
+      "hyponyms": ["前端开发", "后端开发", "移动开发", "DevOps"],
+      "siblings": ["测试"],
+      "domain": "tech",
+      "aliases": ["编程", "代码开发"]
+    },
+    "前端开发": {
+      "id": "tech:frontend",
+      "text": "前端开发",
+      "hypernyms": ["软件开发"],
+      "hyponyms": ["React", "Vue", "Angular", "原生JS"],
+      "siblings": ["后端开发", "移动开发"],
+      "domain": "tech",
+      "aliases": ["Web前端", "客户端开发"]
+    }
+  }
+}

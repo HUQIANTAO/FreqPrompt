@@ -2,6 +2,17 @@ mod wordfreq_data;
 mod wordfreq_data_cn;
 mod wordfreq_data_bigram;
 mod wordfreq_data_cn_bigram;
+pub mod multi_layer;
+
+/// Detects whether the input text is primarily Chinese.
+///
+/// # Examples
+///
+/// ```
+/// # use frequency::detect_language;
+/// assert_eq!(detect_language("今天天气很好"), "zh");
+/// assert_eq!(detect_language("Hello world"), "en");
+/// ```
 
 /// Default Zipf frequency for unknown English words.
 /// Raised significantly because unknown words in real-world prompts

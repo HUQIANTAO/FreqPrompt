@@ -28,6 +28,7 @@ export interface LowToken {
 
 let worker: Worker | null = null;
 let nextRequestId = 1;
+let wasmReady = false;
 const pending = new Map<number, { resolve: (v: any) => void; reject: (e: any) => void }>();
 
 function ensureWorker(): Worker {
@@ -37,6 +38,7 @@ function ensureWorker(): Worker {
   worker.addEventListener('message', (e: MessageEvent) => {
     const { id, ok, data, error } = e.data;
     if (id === -1) return; // worker-ready signal, ignore
+    if (id === -2) { wasmReady = true; updateWasmLoading(false); return; } // wasm-ready
     const p = pending.get(id);
     if (!p) return;
     pending.delete(id);
@@ -46,7 +48,15 @@ function ensureWorker(): Worker {
   worker.addEventListener('error', (e) => {
     console.error('[frequency.worker] error:', e);
   });
+  // Show loading indicator during initial WASM init
+  updateWasmLoading(true);
   return worker;
+}
+
+/** Update a WASM loading indicator in the UI. */
+function updateWasmLoading(loading: boolean): void {
+  const el = document.getElementById('wasm-loading');
+  if (el) el.style.display = loading ? '' : 'none';
 }
 
 function call<T = any>(op: string, args: any[]): Promise<T> {
@@ -88,4 +98,14 @@ export async function lowestTokens(
 
 export async function detectLanguage(text: string): Promise<string> {
   return call<string>('detect_language', [text]);
+}
+
+/* ═══════════════ Internal Worker Bridge ═══════════════ */
+
+/**
+ * Generic call into the WASM worker. Used by v3 modules (semantic, etc.)
+ * that share the same worker transport. Exported as a public API.
+ */
+export async function callWasm<T = any>(op: string, args: any[]): Promise<T> {
+  return call<T>(op, args);
 }

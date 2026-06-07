@@ -6,6 +6,8 @@
  *          scored low and is asked to replace only those words.
  */
 
+import { detectLanguage } from './lang';
+
 export interface ApiConfig {
   baseUrl: string;
   apiKey: string;
@@ -80,26 +82,11 @@ const R2_SYSTEM_ZH = `你是一位中文词汇频率专家。你的任务是**�
 
 /* ═══════════════ API Client ═══════════════ */
 
-function isChinese(text: string): boolean {
-  let cjk = 0, total = 0;
-  for (const c of text) {
-    if (c.trim() === '') continue;
-    total++;
-    const code = c.codePointAt(0)!;
-    if ((code >= 0x4E00 && code <= 0x9FFF) ||
-        (code >= 0x3400 && code <= 0x4DBF) ||
-        (code >= 0x3000 && code <= 0x303F)) {
-      cjk++;
-    }
-  }
-  return total > 0 && cjk / total > 0.3;
-}
-
 async function callLLM(
   systemPrompt: string,
   userMessage: string,
   config: ApiConfig,
-  temperature: number = 0.8
+  temperature: number = 0.0
 ): Promise<string[]> {
   const url = `${config.baseUrl.replace(/\/$/, '')}/chat/completions`;
 
@@ -116,7 +103,6 @@ async function callLLM(
         { role: 'user', content: userMessage },
       ],
       temperature,
-      max_tokens: 2000,
     }),
   });
 
@@ -142,7 +128,7 @@ export async function generateParaphrases(
   originalPrompt: string,
   config: ApiConfig
 ): Promise<string[]> {
-  const zh = isChinese(originalPrompt);
+  const zh = detectLanguage(originalPrompt) === 'zh';
   const system = zh ? R1_SYSTEM_ZH : R1_SYSTEM_EN;
   const lines = await callLLM(system, originalPrompt, config, 0.8);
   return lines.slice(0, 6);
@@ -161,7 +147,7 @@ export async function targetedReplace(
   lowWords: { text: string; zipf_score: number }[],
   config: ApiConfig
 ): Promise<string[]> {
-  const zh = isChinese(currentBest);
+  const zh = detectLanguage(currentBest) === 'zh';
   const system = zh ? R2_SYSTEM_ZH : R2_SYSTEM_EN;
 
   // Build a clear list of words to replace

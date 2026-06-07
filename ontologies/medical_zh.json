@@ -1,0 +1,96 @@
+{
+  "domain": "medical",
+  "lang": "zh",
+  "concepts": {
+    "疾病": {
+      "id": "medical:disease",
+      "text": "疾病",
+      "hypernyms": [],
+      "hyponyms": ["传染病", "慢性病", "遗传病", "精神疾病"],
+      "siblings": [],
+      "domain": "medical",
+      "aliases": ["病症", "疾患"]
+    },
+    "传染病": {
+      "id": "medical:infectious_disease",
+      "text": "传染病",
+      "hypernyms": ["疾病"],
+      "hyponyms": ["流感", "肺炎", "肝炎", "结核病"],
+      "siblings": ["慢性病", "遗传病"],
+      "domain": "medical",
+      "aliases": ["感染性疾病"]
+    },
+    "慢性病": {
+      "id": "medical:chronic_disease",
+      "text": "慢性病",
+      "hypernyms": ["疾病"],
+      "hyponyms": ["糖尿病", "高血压", "冠心病", "慢性阻塞性肺病"],
+      "siblings": ["传染病", "遗传病"],
+      "domain": "medical",
+      "aliases": ["慢性疾病", "慢病"]
+    },
+    "糖尿病": {
+      "id": "medical:diabetes",
+      "text": "糖尿病",
+      "hypernyms": ["慢性病"],
+      "hyponyms": ["1型糖尿病", "2型糖尿病"],
+      "siblings": ["高血压", "冠心病"],
+      "domain": "medical",
+      "aliases": ["消渴症"]
+    },
+    "治疗": {
+      "id": "medical:treatment",
+      "text": "治疗",
+      "hypernyms": [],
+      "hyponyms": ["药物治疗", "手术治疗", "物理治疗", "心理治疗"],
+      "siblings": ["诊断", "预防"],
+      "domain": "medical",
+      "aliases": ["医治", "疗法"]
+    },
+    "药物治疗": {
+      "id": "medical:pharmacotherapy",
+      "text": "药物治疗",
+      "hypernyms": ["治疗"],
+      "hyponyms": ["抗生素治疗", "激素治疗", "化疗"],
+      "siblings": ["手术治疗", "物理治疗"],
+      "domain": "medical",
+      "aliases": ["药物疗法", "用药"]
+    },
+    "手术治疗": {
+      "id": "medical:surgery",
+      "text": "手术治疗",
+      "hypernyms": ["治疗"],
+      "hyponyms": ["微创手术", "开放手术", "器官移植"],
+      "siblings": ["药物治疗", "物理治疗"],
+      "domain": "medical",
+      "aliases": ["外科手术", "开刀"]
+    },
+    "诊断": {
+      "id": "medical:diagnosis",
+      "text": "诊断",
+      "hypernyms": [],
+      "hyponyms": ["影像诊断", "实验室诊断", "基因诊断"],
+      "siblings": ["治疗", "预防"],
+      "domain": "medical",
+      "aliases": ["确诊", "检查"]
+    },
+    "预防": {
+      "id": "medical:prevention",
+      "text": "预防",
+      "hypernyms": [],
+      "hyponyms": ["疫苗接种", "健康筛查", "健康教育"],
+      "siblings": ["诊断", "治疗"],
+      "domain": "medical",
+      "aliases": ["防治", "防控"]
+    },
+    "药物": {
+      "id": "medical:medication",
+      "text": "药物",
+      "hypernyms": [],
+      "hyponyms": ["处方药", "非处方药", "中成药", "生物制剂"],
+      "siblings": [],
+      "domain": "medical",
+      "aliases": ["药品", "药剂"]
+    }
+  }
+}

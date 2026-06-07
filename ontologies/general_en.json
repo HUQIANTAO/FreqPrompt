@@ -1,0 +1,141 @@
+{
+  "domain": "general",
+  "lang": "en",
+  "concepts": {
+    "explain": {
+      "id": "general:explain",
+      "text": "explain",
+      "hypernyms": [],
+      "hyponyms": ["elaborate", "clarify", "describe"],
+      "siblings": ["analyze", "compare"],
+      "domain": "general",
+      "aliases": ["clarify", "describe"]
+    },
+    "elaborate": {
+      "id": "general:elaborate",
+      "text": "elaborate",
+      "hypernyms": ["explain"],
+      "hyponyms": [],
+      "siblings": ["clarify"],
+      "domain": "general",
+      "aliases": ["expound", "detail"]
+    },
+    "analyze": {
+      "id": "general:analyze",
+      "text": "analyze",
+      "hypernyms": [],
+      "hyponyms": ["examine", "investigate", "study"],
+      "siblings": ["compare", "evaluate"],
+      "domain": "general",
+      "aliases": ["examine"]
+    },
+    "compare": {
+      "id": "general:compare",
+      "text": "compare",
+      "hypernyms": [],
+      "hyponyms": ["contrast"],
+      "siblings": ["analyze"],
+      "domain": "general",
+      "aliases": ["contrast"]
+    },
+    "evaluate": {
+      "id": "general:evaluate",
+      "text": "evaluate",
+      "hypernyms": [],
+      "hyponyms": ["assess", "appraise"],
+      "siblings": ["analyze"],
+      "domain": "general",
+      "aliases": ["assess"]
+    },
+    "impact": {
+      "id": "general:impact",
+      "text": "impact",
+      "hypernyms": [],
+      "hyponyms": ["effect", "influence", "consequence"],
+      "siblings": [],
+      "domain": "general",
+      "aliases": ["effect", "influence"]
+    },
+    "mechanism": {
+      "id": "general:mechanism",
+      "text": "mechanism",
+      "hypernyms": [],
+      "hyponyms": ["process", "procedure"],
+      "siblings": ["process"],
+      "domain": "general",
+      "aliases": ["process"]
+    },
+    "process": {
+      "id": "general:process",
+      "text": "process",
+      "hypernyms": [],
+      "hyponyms": ["procedure", "workflow"],
+      "siblings": ["mechanism"],
+      "domain": "general",
+      "aliases": ["procedure"]
+    },
+    "fiscal": {
+      "id": "finance:fiscal",
+      "text": "fiscal",
+      "hypernyms": ["economic"],
+      "hyponyms": [],
+      "siblings": ["monetary"],
+      "domain": "finance",
+      "aliases": ["financial"]
+    },
+    "monetary": {
+      "id": "finance:monetary",
+      "text": "monetary",
+      "hypernyms": ["economic"],
+      "hyponyms": [],
+      "siblings": ["fiscal"],
+      "domain": "finance",
+      "aliases": []
+    },
+    "economic": {
+      "id": "finance:economic",
+      "text": "economic",
+      "hypernyms": [],
+      "hyponyms": ["fiscal", "monetary"],
+      "siblings": [],
+      "domain": "finance",
+      "aliases": []
+    },
+    "equilibrium": {
+      "id": "finance:equilibrium",
+      "text": "equilibrium",
+      "hypernyms": [],
+      "hyponyms": ["general equilibrium", "partial equilibrium"],
+      "siblings": [],
+      "domain": "finance",
+      "aliases": ["balance"]
+    },
+    "policy": {
+      "id": "general:policy",
+      "text": "policy",
+      "hypernyms": [],
+      "hyponyms": ["fiscal policy", "monetary policy", "trade policy"],
+      "siblings": [],
+      "domain": "general",
+      "aliases": []
+    },
+    "adjustment": {
+      "id": "general:adjustment",
+      "text": "adjustment",
+      "hypernyms": ["change"],
+      "hyponyms": [],
+      "siblings": ["modification"],
+      "domain": "general",
+      "aliases": ["modification"]
+    },
+    "change": {
+      "id": "general:change",
+      "text": "change",
+      "hypernyms": [],
+      "hyponyms": ["adjustment", "modification", "alteration"],
+      "siblings": [],
+      "domain": "general",
+      "aliases": ["alteration"]
+    }
+  }
+}

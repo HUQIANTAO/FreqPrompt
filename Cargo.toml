@@ -1,6 +1,9 @@
 [workspace]
 members = [
     "crates/frequency",
+    "crates/semantic",
+    "crates/ontology",
+    "crates/domain",
     "crates/wasm-bridge",
 ]
 resolver = "2"

@@ -1,7 +1,9 @@
 [package]
-name = "frequency"
+name = "domain"
 version = "0.1.0"
 edition = "2021"
+description = "Domain-specific frequency tables for FreqPrompt v3"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"

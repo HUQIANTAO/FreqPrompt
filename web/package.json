@@ -8,9 +8,12 @@
     "build:web": "rolldown -c rolldown.config.mjs",
     "build": "npm run build:wasm && npm run build:web",
     "serve": "cd dist && python3 -m http.server 8888",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "dev": "rolldown -c rolldown.config.mjs --watch"
   },
   "devDependencies": {
-    "rolldown": "^1.0.3"
+    "rolldown": "^1.0.3",
+    "vitest": "^4.1.8"
   }
 }

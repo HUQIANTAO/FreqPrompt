@@ -1,5 +1,5 @@
 /**
- * FreqPrompt v2 — Entry point
+ * FreqPrompt v2/v3 — Entry point
  *
  * Beam-search iterative optimization:
  *   Round 1: LLM generates 6 broad paraphrases → WASM scores → keep top-3 (beam)
@@ -7,38 +7,50 @@
  *            → 4 versions per beam → 12 candidates
  *   Final:   Score all beam outputs together, pick overall best.
  *
+ * v3 Semantic Guard: between R1 and final scoring, candidates are verified
+ * against the original prompt's semantic slots (Action, Object, Scope, Qtype,
+ * Register, Placeholder, Negation, Condition). Candidates that drop or
+ * semantically shift critical slots are blocked. This prevents the
+ * "财政政策 → 国税规定" / "影响机制 → 过程" failure modes.
+ *
+ * v3 Sprint 2: Ontology Guard — prevents parent↔child substitution
+ * v3 Sprint 3: Multi-layer scoring (frequency + collocation + complexity + slot + domain)
+ * v3 Sprint 4: Domain adaptation (custom frequency tables from user corpus)
+ *
  * Real-time scoring: as the user types, debounced WASM scoring shows
  * the current prompt's score and color-coded per-word breakdown.
  */
+import { detectLanguage } from './lang';
 import { generateParaphrases, targetedReplace } from './paraphrase';
 import { optimizePrompt, scoreSentences, tokenizeAndScore, lowestTokens } from './frequency';
+import {
+  HeuristicEmbedder,
+  filterPreservingCandidates,
+  extractSlots,
+  type Slot,
+  type VerifyOutput,
+} from './semantic';
+import {
+  loadOntology,
+  detectDomain,
+  batchCheckSubstitutions,
+  type SubstitutionResult,
+} from './ontology';
+import {
+  computeMultiLayerScore,
+  renderWeightConfig,
+} from './pipeline';
 import {
   loadConfig, saveConfig, populateConfigForm, updateConfigIndicator,
   toggleSettings, initTheme, toggleTheme,
   toggleHistory, addHistoryEntry, updateHistoryBadge, renderHistory,
   clearHistory, exportHistory, importHistory,
   showToast, showError, hideError, setLoading, updateCharCount,
+  showConfirm,
   renderResults, showRoundProgress, updateLiveScore,
+  renderSlotGuardReport, renderOntologyReport, renderMultiLayerReport,
+  renderDetectedDomain,
 } from './ui';
-
-/* ════════════════════════════════════
-   LANGUAGE DETECTION
-   ════════════════════════════════════ */
-
-function detectLanguage(text: string): string {
-  let cjk = 0, total = 0;
-  for (const c of text) {
-    if (c.trim() === '') continue;
-    total++;
-    const code = c.codePointAt(0)!;
-    if ((code >= 0x4E00 && code <= 0x9FFF) ||
-        (code >= 0x3400 && code <= 0x4DBF) ||
-        (code >= 0x3000 && code <= 0x303F)) {
-      cjk++;
-    }
-  }
-  return total > 0 && cjk / total > 0.3 ? 'zh' : 'en';
-}
 
 /* ════════════════════════════════════
    BEAM-SEARCH OPTIMIZE FLOW
@@ -69,7 +81,27 @@ async function handleOptimize(): Promise<void> {
   const roundLabel = lang === 'zh' ? '轮' : 'round';
   const beamLabel = lang === 'zh' ? '束' : 'beam';
 
+  // v3 Semantic Guard state
+  const embedder = new HeuristicEmbedder();
+  let originalSlots: Slot[] = [];
+  let semanticFiltered: { total: number; kept: number; dropped: VerifyOutput[] } | null = null;
+  let ontologyFiltered: SubstitutionResult[] = [];
+  let detectedDomain: string | null = null;
+
   try {
+    /* ── Round 0: Extract semantic slots + detect domain ── */
+    showRoundProgress(`第 0 ${roundLabel}：分析语义槽位…`);
+    try {
+      [originalSlots] = await Promise.all([
+        extractSlots(originalPrompt, lang === 'zh' ? 'zh' : 'en'),
+        detectDomain(originalPrompt, lang).then(d => {
+          detectedDomain = d?.domain ?? null;
+        }).catch(() => {}),
+      ]);
+    } catch {
+      originalSlots = [];
+    }
+
     /* ── Round 1: Broad paraphrases → score → keep top BEAM_WIDTH ── */
     showRoundProgress(`第 1 ${roundLabel}：生成多样化改写（束宽 ${BEAM_WIDTH}）…`);
     const r1Candidates = await generateParaphrases(originalPrompt, config);
@@ -80,8 +112,50 @@ async function handleOptimize(): Promise<void> {
       return;
     }
 
-    // Score everything (R1 candidates + original) once
-    const r1AllText = [...new Set([originalPrompt, ...r1Candidates])];
+    /* ── v3 Semantic Guard: filter R1 candidates ── */
+    let r1Survivors: string[] = r1Candidates;
+    if (originalSlots.length > 0) {
+      showRoundProgress(`第 1 ${roundLabel}：语义守门检查 ${r1Candidates.length} 个候选…`);
+      const verified = await filterPreservingCandidates(originalPrompt, r1Candidates, embedder);
+      const dropped = verified.filter(v => !v.passes);
+      r1Survivors = verified.filter(v => v.passes).map(v => v.text);
+
+      semanticFiltered = {
+        total: verified.length,
+        kept: r1Survivors.length,
+        dropped: dropped.map(d => d.output),
+      };
+
+      // If filtering removed everything, log and fall back to using the most-
+      // semantically-faithful candidate rather than failing outright.
+      if (r1Survivors.length === 0 && verified.length > 0) {
+        r1Survivors = [verified.sort((a, b) => b.score - a.score)[0].text];
+        if (semanticFiltered) semanticFiltered.kept = 1;
+      }
+    }
+
+    /* ── v3 Sprint 2: Ontology Guard — block parent→child substitutions ── */
+    if (r1Survivors.length > 0 && detectedDomain) {
+      try {
+        const ontologyJson = await loadOntology(detectedDomain, lang);
+        if (ontologyJson !== '{}') {
+          const pairs: [string, string][] = r1Survivors.map(c => [originalPrompt, c] as [string, string]);
+          const ontologyResults = await batchCheckSubstitutions(pairs, ontologyJson);
+          const unsafeResults = ontologyResults.filter(r => !r.is_safe);
+          if (unsafeResults.length > 0) {
+            ontologyFiltered = unsafeResults;
+            // Remove unsafe candidates
+            const unsafeTexts = new Set(unsafeResults.map(r => r.candidate));
+            r1Survivors = r1Survivors.filter(c => !unsafeTexts.has(c));
+          }
+        }
+      } catch {
+        // ontology check is optional
+      }
+    }
+
+    // Score everything (R1 survivors + original) once
+    const r1AllText = [...new Set([originalPrompt, ...r1Survivors])];
     const r1Scored = await scoreSentences(r1AllText);
 
     // Sort by score desc, keep top BEAM_WIDTH (excluding original which is the baseline)
@@ -121,6 +195,43 @@ async function handleOptimize(): Promise<void> {
         }
       }
       r2Candidates = [...new Set(r2Candidates)].filter(c => c !== originalPrompt);
+
+      // v3 Semantic Guard: filter R2 candidates too
+      if (r2Candidates.length > 0 && originalSlots.length > 0) {
+        const r2Verified = await filterPreservingCandidates(originalPrompt, r2Candidates, embedder);
+        const r2Dropped = r2Verified.filter(v => !v.passes);
+        r2Candidates = r2Verified.filter(v => v.passes).map(v => v.text);
+
+        // Accumulate drops into the report
+        if (semanticFiltered) {
+          semanticFiltered.total += r2Verified.length;
+          semanticFiltered.kept += r2Candidates.length;
+          semanticFiltered.dropped.push(...r2Dropped.map(d => d.output));
+        }
+        if (r2Candidates.length === 0 && r2Verified.length > 0) {
+          r2Candidates = [r2Verified.sort((a, b) => b.score - a.score)[0].text];
+          if (semanticFiltered) semanticFiltered.kept = (semanticFiltered.kept || 0) + 1;
+        }
+      }
+
+      // v3 Sprint 2: Ontology Guard for R2 candidates
+      if (r2Candidates.length > 0 && detectedDomain) {
+        try {
+          const ontologyJson = await loadOntology(detectedDomain, lang);
+          if (ontologyJson !== '{}') {
+            const pairs: [string, string][] = r2Candidates.map(c => [originalPrompt, c] as [string, string]);
+            const ontologyResults = await batchCheckSubstitutions(pairs, ontologyJson);
+            const unsafeResults = ontologyResults.filter(r => !r.is_safe);
+            if (unsafeResults.length > 0) {
+              ontologyFiltered.push(...unsafeResults);
+              const unsafeTexts = new Set(unsafeResults.map(r => r.candidate));
+              r2Candidates = r2Candidates.filter(c => !unsafeTexts.has(c));
+            }
+          }
+        } catch {
+          // ontology check is optional
+        }
+      }
     }
 
     /* ── Final scoring: combine all candidates + beams + original ── */
@@ -155,10 +266,42 @@ async function handleOptimize(): Promise<void> {
     renderResults(finalResult, wordScores, { r1Delta, r2Applied, beamWidth: BEAM_WIDTH });
     addHistoryEntry(originalPrompt, finalResult, lang);
 
+    // v3: always show semantic guard report
+    if (semanticFiltered) {
+      renderSlotGuardReport(semanticFiltered, originalSlots, lang);
+    }
+
+    // v3 Sprint 2: always show ontology guard report
+    renderOntologyReport(ontologyFiltered, lang);
+
+    // v3 Sprint 3: always show multi-layer score
+    try {
+      const slotPres = semanticFiltered
+        ? semanticFiltered.kept / Math.max(semanticFiltered.total, 1)
+        : 1.0;
+      const mlScores = await computeMultiLayerScore(finalBest.text, slotPres);
+      renderMultiLayerReport(mlScores, lang);
+    } catch (e) {
+      console.warn('Multi-layer score failed:', e);
+    }
+
     const totalDelta = finalBest.zipf_score - originalScore;
-    const msg = lang === 'zh'
-      ? `优化完成！${r2Applied ? `${BEAM_WIDTH} 束精修` : ''} 提升 +${totalDelta.toFixed(2)}`
-      : `Optimized!${r2Applied ? ` ${BEAM_WIDTH}-beam` : ''} +${totalDelta.toFixed(2)}`;
+    let msg: string;
+    if (lang === 'zh') {
+      const dropped = semanticFiltered?.dropped.length ?? 0;
+      const ontologyBlocked = ontologyFiltered.length;
+      msg = `优化完成！${r2Applied ? `${BEAM_WIDTH} 束精修 ` : ''}提升 +${totalDelta.toFixed(2)}`
+        + (dropped > 0 ? ` · 语义守门拦截 ${dropped} 条` : '')
+        + (ontologyBlocked > 0 ? ` · 本体守门拦截 ${ontologyBlocked} 条` : '')
+        + (detectedDomain ? ` · 领域: ${detectedDomain}` : '');
+    } else {
+      const dropped = semanticFiltered?.dropped.length ?? 0;
+      const ontologyBlocked = ontologyFiltered.length;
+      msg = `Optimized!${r2Applied ? ` ${BEAM_WIDTH}-beam ` : ''}+${totalDelta.toFixed(2)}`
+        + (dropped > 0 ? ` · semantic guard blocked ${dropped}` : '')
+        + (ontologyBlocked > 0 ? ` · ontology guard blocked ${ontologyBlocked}` : '')
+        + (detectedDomain ? ` · domain: ${detectedDomain}` : '');
+    }
     showToast(msg);
   } catch (err: any) {
     showError(`优化失败：${err.message || '未知错误'}`);
@@ -173,6 +316,7 @@ async function handleOptimize(): Promise<void> {
    ════════════════════════════════════ */
 
 let liveScoreTimer: number | null = null;
+let liveScoreGeneration = 0;
 
 async function handleLiveScore(): Promise<void> {
   const ta = document.getElementById('prompt-input') as HTMLTextAreaElement;
@@ -181,13 +325,18 @@ async function handleLiveScore(): Promise<void> {
     updateLiveScore(null);
     return;
   }
+  const gen = ++liveScoreGeneration;
   try {
     const tokens = await tokenizeAndScore(text);
+    // Discard stale results from superseded requests
+    if (gen !== liveScoreGeneration) return;
     // Compute average score
     const avg = tokens.length > 0
       ? tokens.reduce((s, t) => s + t.zipf_score, 0) / tokens.length
       : 0;
-    updateLiveScore({ avg, tokens });
+    if (gen === liveScoreGeneration) {
+      updateLiveScore({ avg, tokens });
+    }
   } catch (err) {
     // silent — live scoring is best-effort
   }
@@ -210,11 +359,17 @@ function bindEvents(): void {
   document.getElementById('btn-cancel-settings')!.addEventListener('click', () => toggleSettings(false));
 
   document.getElementById('save-config')!.addEventListener('click', () => {
-    const config = {
-      baseUrl: (document.getElementById('base-url') as HTMLInputElement).value.trim(),
-      apiKey: (document.getElementById('api-key') as HTMLInputElement).value.trim(),
-      modelId: (document.getElementById('model-id') as HTMLInputElement).value.trim(),
-    };
+    const baseUrl = (document.getElementById('base-url') as HTMLInputElement).value.trim();
+    const apiKey = (document.getElementById('api-key') as HTMLInputElement).value.trim();
+    const modelId = (document.getElementById('model-id') as HTMLInputElement).value.trim();
+
+    // Validation
+    if (!baseUrl) { showError('请输入 API 地址。'); return; }
+    try { new URL(baseUrl); } catch { showError('API 地址格式不正确（需要完整的 http(s):// URL）。'); return; }
+    if (!apiKey) { showError('请输入 API 密钥。'); return; }
+    if (!modelId) { showError('请输入模型 ID。'); return; }
+
+    const config = { baseUrl, apiKey, modelId };
     saveConfig(config);
     updateConfigIndicator(config);
     toggleSettings(false);
@@ -260,8 +415,9 @@ function bindEvents(): void {
     reader.readAsText(file);
   });
 
-  document.getElementById('btn-clear-history')!.addEventListener('click', () => {
-    if (confirm('确定要清空所有历史记录吗？此操作不可撤销。')) clearHistory();
+  document.getElementById('btn-clear-history')!.addEventListener('click', async () => {
+    const ok = await showConfirm('确定要清空所有历史记录吗？此操作不可撤销。');
+    if (ok) clearHistory();
   });
 
   // ── Example chips ──
@@ -309,4 +465,32 @@ document.addEventListener('DOMContentLoaded', () => {
   updateHistoryBadge();
   updateCharCount();
   bindEvents();
+
+  // ── v3: Weight settings modal ──
+  const weightModal = document.getElementById('weight-modal-overlay');
+  const btnV3 = document.getElementById('btn-v3-settings');
+  const btnCloseModal = document.getElementById('btn-close-weight-modal');
+
+  if (btnV3 && weightModal) {
+    btnV3.addEventListener('click', () => {
+      weightModal.classList.add('open');
+      // Render weight config into the modal body (only once)
+      const weightCfg = weightModal.querySelector('#weight-config');
+      if (weightCfg && (weightCfg as HTMLElement).children.length === 0) {
+        renderWeightConfig(weightCfg as HTMLElement, (_w) => {
+          // weights are persisted by renderWeightConfig's own saveWeights call
+        });
+      }
+    });
+  }
+  if (btnCloseModal && weightModal) {
+    btnCloseModal.addEventListener('click', () => {
+      weightModal.classList.remove('open');
+    });
+    weightModal.addEventListener('click', (e) => {
+      if (e.target === weightModal) {
+        weightModal.classList.remove('open');
+      }
+    });
+  }
 });

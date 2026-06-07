@@ -39,6 +39,9 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('crates/**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
+      - name: Run Rust tests
+        run: cargo test --workspace
+
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 

@@ -15,8 +15,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
+name = "domain"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "frequency"
 version = "0.1.0"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "itoa"
@@ -35,6 +46,14 @@ name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
+
+[[package]]
+name = "ontology"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "proc-macro2"
@@ -59,6 +78,14 @@ name = "rustversion"
 version = "1.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
+
+[[package]]
+name = "semantic"
+version = "0.1.0"
+dependencies = [
+ "frequency",
+ "serde",
+]
 
 [[package]]
 name = "serde"
@@ -169,7 +196,10 @@ dependencies = [
 name = "wasm-bridge"
 version = "0.1.0"
 dependencies = [
+ "domain",
  "frequency",
+ "ontology",
+ "semantic",
  "serde",
  "serde_json",
  "wasm-bindgen",

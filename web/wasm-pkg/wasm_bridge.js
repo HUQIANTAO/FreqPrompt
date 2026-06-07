@@ -1,6 +1,149 @@
 /* @ts-self-types="./wasm_bridge.d.ts" */
 
 /**
+ * Batch substitution check: validate multiple (original, candidate) pairs.
+ * Input JSON: {"pairs": [["财政政策", "税收政策"], ...], "ontology_json": "..."}
+ * Output JSON: [{"original": "...", "candidate": "...", "verdict": "Narrowing", ...}]
+ * @param {string} json_input
+ * @returns {string}
+ */
+export function batch_check_substitutions(json_input) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(json_input, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.batch_check_substitutions(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Build a domain frequency table from tokenized text.
+ * Input JSON: {"name": "finance", "lang": "zh", "tokens": ["财政", "政策", ...]}
+ * Output JSON: the DomainFreqTable as JSON
+ * @param {string} json_input
+ * @returns {string}
+ */
+export function build_domain_freq_table(json_input) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(json_input, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.build_domain_freq_table(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Check structural sanity of a candidate (cheap pre-filter, no embedding).
+ * Returns JSON array of {kind, text, issue} for any failed checks.
+ * @param {string} json_input
+ * @returns {string}
+ */
+export function check_candidate_structure(json_input) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(json_input, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.check_candidate_structure(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Check if substituting `original` with `candidate` is semantically safe.
+ * Input JSON: {"original": "财政政策", "candidate": "国税规定", "ontology_json": "..."}
+ * Output JSON: {"verdict": "Narrowing", "is_safe": false, "label": "语义收窄"}
+ * @param {string} json_input
+ * @returns {string}
+ */
+export function check_substitution(json_input) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(json_input, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.check_substitution(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Return default scoring weights as JSON.
+ * @returns {string}
+ */
+export function default_scoring_weights() {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        const ret = wasm.default_scoring_weights();
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Default slot thresholds as JSON (for UI display / configuration).
+ * @returns {string}
+ */
+export function default_slot_thresholds() {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        const ret = wasm.default_slot_thresholds();
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Detect the domain of a text using keyword matching.
+ * Input JSON: {"text": "...", "lang": "zh"}
+ * Output JSON: {"domain": "finance", "confidence": 0.35, "matched_keywords": ["财政", ...]}
+ * @param {string} json_input
+ * @returns {string}
+ */
+export function detect_domain(json_input) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(json_input, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.detect_domain(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
  * Detect the language of a text. Returns "zh" or "en".
  * @param {string} text
  * @returns {string}
@@ -12,6 +155,53 @@ export function detect_language(text) {
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.detect_language(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Extract semantic slots from a prompt.
+ * Pass `lang` as "auto", "zh", or "en".
+ * Returns JSON array of {kind, text, char_start, char_end, sub_tag}.
+ * @param {string} text
+ * @param {string} lang
+ * @returns {string}
+ */
+export function extract_slots(text, lang) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(lang, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.extract_slots(ptr0, len0, ptr1, len1);
+        deferred3_0 = ret[0];
+        deferred3_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Compute hybrid score (general + domain) for a sentence.
+ * Input JSON: {"sentence": "...", "domain_table_json": "...", "alpha": 0.6, "beta": 0.4}
+ * Output JSON: {"general_score": 6.0, "domain_score": 7.5, "hybrid_score": 6.6}
+ * @param {string} json_input
+ * @returns {string}
+ */
+export function hybrid_sentence_score(json_input) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(json_input, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.hybrid_sentence_score(ptr0, len0);
         deferred2_0 = ret[0];
         deferred2_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
@@ -37,6 +227,28 @@ export function lowest_tokens(json_input) {
         const ptr0 = passStringToWasm0(json_input, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.lowest_tokens(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Compute multi-layer score for a sentence.
+ * Input JSON: {"sentence": "...", "slot_preservation": 1.0, "domain_relevance": 0.5}
+ * Output JSON: {"frequency": 7.0, "collocation": 0.8, "complexity": 0.6, ...}
+ * @param {string} json_input
+ * @returns {string}
+ */
+export function multi_layer_score(json_input) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(json_input, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.multi_layer_score(ptr0, len0);
         deferred2_0 = ret[0];
         deferred2_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
@@ -108,6 +320,35 @@ export function tokenize_and_score(json_input) {
         const ptr0 = passStringToWasm0(json_input, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.tokenize_and_score(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Verify slot preservation between original and candidate.
+ * Returns JSON object with:
+ *   - `verdicts`: array of {original, matched, similarity, passes, threshold}
+ *   - `preservation_score`: aggregated score in [0.0, 1.0]
+ *   - `passes`: whether the candidate preserves all critical slots
+ *
+ * `similarities` is a JSON array parallel to the original slots:
+ *   [{"text": "财政政策", "similarity": 0.92}, ...]
+ * For exact-match slots (placeholder, negation), similarity is ignored
+ * and string equality is used.
+ * @param {string} json_input
+ * @returns {string}
+ */
+export function verify_slots(json_input) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(json_input, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.verify_slots(ptr0, len0);
         deferred2_0 = ret[0];
         deferred2_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
